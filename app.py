@@ -202,10 +202,7 @@ st.markdown(
      .css-1d391kg {
          background: linear-gradient(180deg, #4CAF50 0%, #2E7D32 100%);
      }
-    /* Sidebar text color */
-    section[data-testid="stSidebar"] {
-        color: #1B5E20;  /* Dark Green */
-    }
+  
 
     .css-1d391kg .css-1v0mbdj {
         color: green;
@@ -225,10 +222,11 @@ st.markdown(
     }
 
     .language-label {
-        color: white;
-        font-weight: 600;
-        margin-bottom: 5px;
+    color: red;
+    font-weight: 600;
+    margin-bottom: 5px;
     }
+
     </style>
     """,
     unsafe_allow_html=True
