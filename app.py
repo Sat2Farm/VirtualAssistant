@@ -198,9 +198,14 @@ st.markdown(
         font-weight: 600;
     }
 
+    # /* Sidebar styling */
+    # .css-1d391kg {
+    #     background: linear-gradient(180deg, #4CAF50 0%, #2E7D32 100%);
+    # }
+
     /* Sidebar styling */
-    .css-1d391kg {
-        background: linear-gradient(180deg, #4CAF50 0%, #2E7D32 100%);
+        .css-1d391kg {
+        background: #2E7D32; /* Dark Green */
     }
 
     .css-1d391kg .css-1v0mbdj {
