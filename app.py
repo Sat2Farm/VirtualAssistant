@@ -204,7 +204,7 @@ st.markdown(
     }
 
     .css-1d391kg .css-1v0mbdj {
-        color: red;
+        color: green;
     }
 
     /* Hide streamlit menu */
