@@ -455,7 +455,7 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
 # Auto-load PDF for RAG context
-default_pdf_path = "Sat2FarmQueries.pdf"
+default_pdf_path = "SatyuktQueries.pdf"
 if os.path.exists(default_pdf_path):
     class DummyFile:  # Create a dummy class to mimic Streamlit's UploadedFile
         def __init__(self, path):
