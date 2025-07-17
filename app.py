@@ -1,8 +1,20 @@
+
 # import streamlit as st
 # import os
 # import pdfplumber
 # import tempfile
 # import random
+# import asyncio
+# import sys
+# import nest_asyncio
+
+# # Fix for event loop issues in Streamlit
+# if sys.platform == "win32":
+#     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+# # Allow nested event loops (fixes the main issue)
+# nest_asyncio.apply()
+
 # # Import for Google Gemini
 # from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 # from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -13,7 +25,6 @@
 # from langchain_core.documents import Document
 # from dotenv import load_dotenv
 # import time
-
 
 # load_dotenv()
 
@@ -331,7 +342,7 @@
 #     "ಕನ್ನಡ": "🤝 ನಮ್ಮ ಕೃಷಿ ತಜ್ಞರೊಂದಿಗೆ ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸುತ್ತೇನೆ! ವಿಶೇಷ ಸಹಾಯಕ್ಕಾಗಿ support@Sat2Farm.com ಗೆ ಸಂಪರ್ಕಿಸಿ ಅಥವಾ 8970700045 | 7019992797 ಗೆ ಕರೆ ಮಾಡಿ.",
 #     "தமிழ்": "🤝 எங்கள் விவசாய நிபுணர்களுடன் உங்களை இணைக்கிறேன்! சிறப்பு உதவிக்கு support@Sat2Farm.com ஐ தொடர்பு கொள்ளவும் அல்லது 8970700045 | 7019992797 ஐ அழைக்கவும்.",
 #     "తెలుగు": "🤝 మా వ్యవసాయ నిపుణులతో మిమ్మల్ని కనెక్ట్ చేస్తాను! ప్రత్యేక సహాయం కోసం దయచేసి support@Sat2Farm.com ని సంప్రదించండి లేదా 8970700045 | 7019992797 కు కాల్ చేయండి.",
-#     "বাংলা": "🤝 আমি আপনাকে আমাদের কৃষি বিশ৻জ্ঞদের সাথে সংযুক্ত করব! বিশেষ সহায়তার জন্য অনুগ্রহ করে support@Sat2Farm.com এ যোগাযোগ করুন অথবা 8970700045 | 7019992797 নম্বরে কল করুন।",
+#     "বাংলা": "🤝 আমি আপনাকে আমাদের কৃষি বিশেষজ্ঞদের সাথে সংযুক্ত করব! বিশেষ সহায়তার জন্য অনুগ্রহ করে support@Sat2Farm.com এ যোগাযোগ করুন অথবা 8970700045 | 7019992797 নম্বরে কল করুন।",
 #     "मराठी": "🤝 मी तुम्हाला आमच्या कृषी तज्ञांशी जोडतो! विशेष मदतीसाठी कृपया support@Sat2Farm.com वर संपर्क साधा किंवा 8970700045 | 7019992797 वर कॉल करा.",
 #     "ગુજરાતી": "🤝 હું તમને અમારા કૃષિ નિષ્ણાતો સાથે જોડું છું! વિશેષ સહાયતા માટે કૃપા કરીને support@Sat2Farm.com નો સંપર્ક કરો અથવા 8970700045 | 7019992797 પર કૉલ કરો.",
 #     "ਪੰਜਾਬੀ": "🤝 ਮੈਂ ਤੁਹਾਨੂੰ ਸਾਡੇ ਖੇਤੀਬਾੜੀ ਮਾਹਿਰਾਂ ਨਾਲ ਜੋੜਦਾ ਹਾਂ! ਵਿਸ਼ੇਸ਼ ਸਹਾਇਤਾ ਲਈ ਕਿਰਪਾ ਕਰਕੇ support@Sat2Farm.com 'ਤੇ ਸੰਪਰਕ ਕਰੋ ਜਾਂ 8970700045 | 7019992797 'ਤੇ ਕਾਲ ਕਰੋ।"
@@ -357,8 +368,21 @@
 #     """
 # )
 
+# # Function to safely initialize LLM with error handling
+# @st.cache_resource
+# def get_llm():
+#     try:
+#         return ChatGoogleGenerativeAI(
+#             model="gemini-1.5-flash-latest", 
+#             google_api_key=random.choice(google_api_keys),
+#             temperature=0.7
+#         )
+#     except Exception as e:
+#         st.error(f"Error initializing LLM: {e}")
+#         return None
+
 # # Initialize the Gemini LLM for chat/generation with a random API key
-# llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=random.choice(google_api_keys))
+# llm = get_llm()
 
 # def is_out_of_context(answer, current_selected_lang):
 #     # This function checks if the answer matches the pre-defined contact message
@@ -430,16 +454,26 @@
 #             text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=300)
 #             chunks = text_splitter.split_documents([doc])
 
-#             # Initialize Gemini Embeddings with a random API key
-#             st.session_state.embeddings = GoogleGenerativeAIEmbeddings(
-#                 model="models/embedding-001",
-#                 google_api_key=random.choice(api_keys)
-#             )
+#             # Initialize Gemini Embeddings with better error handling
+#             try:
+#                 st.session_state.embeddings = GoogleGenerativeAIEmbeddings(
+#                     model="models/embedding-001",
+#                     google_api_key=random.choice(api_keys)
+#                 )
+#             except Exception as e:
+#                 st.error(f"Error initializing embeddings: {e}")
+#                 loading_placeholder.empty()
+#                 return False
 
 #             # Create the vector store from the document chunks and embeddings
-#             st.session_state.vector_store = DocArrayInMemorySearch.from_documents(
-#                 chunks, st.session_state.embeddings
-#             )
+#             try:
+#                 st.session_state.vector_store = DocArrayInMemorySearch.from_documents(
+#                     chunks, st.session_state.embeddings
+#                 )
+#             except Exception as e:
+#                 st.error(f"Error creating vector store: {e}")
+#                 loading_placeholder.empty()
+#                 return False
 
 #             loading_placeholder.empty()  # Clear the loading message
 #             return True
@@ -479,7 +513,7 @@
 #         f"❌ PDF file '{default_pdf_path}' not found in the project directory. Please ensure it's in the same directory as your Streamlit app.")
 
 # # Enhanced Chat Interface
-# if "vector_store" in st.session_state:  # Only show chat if vector store is initialized
+# if "vector_store" in st.session_state and llm:  # Only show chat if vector store is initialized
 #     st.markdown("### 💬 Chat with Sat2Farm Virtual Assistant")
 
 #     # Display chat history with enhanced styling
@@ -576,13 +610,6 @@
 #     """,
 #     unsafe_allow_html=True
 # )
-
-
-
-
-
-
-
 
 
 
@@ -967,12 +994,13 @@ You are a helpful, multilingual AI assistant specializing in agriculture. Answer
     """
 )
 
+
 # Function to safely initialize LLM with error handling
 @st.cache_resource
 def get_llm():
     try:
         return ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash-latest", 
+            model="gemini-1.5-flash-latest",
             google_api_key=random.choice(google_api_keys),
             temperature=0.7
         )
@@ -980,8 +1008,10 @@ def get_llm():
         st.error(f"Error initializing LLM: {e}")
         return None
 
+
 # Initialize the Gemini LLM for chat/generation with a random API key
 llm = get_llm()
+
 
 def is_out_of_context(answer, current_selected_lang):
     # This function checks if the answer matches the pre-defined contact message
@@ -1002,6 +1032,7 @@ def is_out_of_context(answer, current_selected_lang):
     ]
     return any(k in answer.lower() for k in keywords)
 
+
 def extract_text_with_pdfplumber(pdf_path):
     text = ""
     try:
@@ -1014,6 +1045,7 @@ def extract_text_with_pdfplumber(pdf_path):
         st.error(f"Error extracting text from PDF: {e}")
         return ""
     return text
+
 
 def initialize_vector_db(pdf_file, api_keys):
     # Only initialize if vector_store is not already in session_state
@@ -1083,9 +1115,14 @@ def initialize_vector_db(pdf_file, api_keys):
             return False
     return True  # Already initialized
 
+
 # Initialize chat history
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
+
+# Initialize message sent flag
+if "message_sent" not in st.session_state:
+    st.session_state.message_sent = False
 
 # Auto-load PDF for RAG context
 default_pdf_path = "SatyuktQueries.pdf"
@@ -1097,6 +1134,7 @@ if os.path.exists(default_pdf_path):
         def read(self):
             with open(self.path, "rb") as f:
                 return f.read()
+
 
     pdf_input_from_user = DummyFile(default_pdf_path)
 
@@ -1142,57 +1180,61 @@ if "vector_store" in st.session_state and llm:  # Only show chat if vector store
         unsafe_allow_html=True
     )
 
-    # Input section
+    # Input section with form for Enter key support
     st.markdown("### Ask your question:")
-    user_prompt = st.text_input(
-        "Type your question here...",
-        placeholder=f"Ask me anything in {selected_lang}... 🌾",
-        key="user_input"
-    )
 
-    send_button = st.button("Send 🚀", key="send_btn")
+    # Create a form to handle Enter key submission
+    with st.form(key='chat_form', clear_on_submit=True):
+        user_prompt = st.text_input(
+            "Type your question here...",
+            placeholder=f"Ask me anything in {selected_lang}... 🌾",
+            key="user_input_form"
+        )
 
-    # Handle ONLY Send button click
-    if send_button and user_prompt:
-        if user_prompt.strip():
-            # Add user message to chat history
-            st.session_state.chat_history.append({"role": "user", "content": user_prompt})
+        # Form submit button (this handles Enter key)
+        submitted = st.form_submit_button("Send 🚀")
 
-            # Show thinking animation
-            with st.spinner("🤔 Sat2Farm is thinking..."):
-                try:
-                    # Create the document chain
-                    document_chain = create_stuff_documents_chain(llm, prompt)
+        # Handle form submission (Enter key or button click)
+        if submitted and user_prompt:
+            if user_prompt.strip():
+                # Add user message to chat history
+                st.session_state.chat_history.append({"role": "user", "content": user_prompt})
 
-                    # Create retriever from the vector store
-                    retriever = st.session_state.vector_store.as_retriever(search_kwargs={"k": 3})
+                # Show thinking animation
+                with st.spinner("🤔 Sat2Farm is thinking..."):
+                    try:
+                        # Create the document chain
+                        document_chain = create_stuff_documents_chain(llm, prompt)
 
-                    # Create the retrieval chain
-                    retrieval_chain = create_retrieval_chain(retriever, document_chain)
+                        # Create retriever from the vector store
+                        retriever = st.session_state.vector_store.as_retriever(search_kwargs={"k": 3})
 
-                    # Invoke the retrieval chain with the user's prompt
-                    response = retrieval_chain.invoke({'input': user_prompt})
-                    answer = response['answer']
+                        # Create the retrieval chain
+                        retrieval_chain = create_retrieval_chain(retriever, document_chain)
 
-                    # Check for out-of-context response
-                    if is_out_of_context(answer, selected_lang):
-                        answer = contact_messages.get(selected_lang, contact_messages['English'])
+                        # Invoke the retrieval chain with the user's prompt
+                        response = retrieval_chain.invoke({'input': user_prompt})
+                        answer = response['answer']
 
-                    # Add AI response to chat history
-                    st.session_state.chat_history.append({"role": "assistant", "content": answer})
+                        # Check for out-of-context response
+                        if is_out_of_context(answer, selected_lang):
+                            answer = contact_messages.get(selected_lang, contact_messages['English'])
 
-                except Exception as e:
-                    error_msg = f"🔧 Sorry, I encountered a technical issue: {e}. Please try again or contact our support team."
-                    st.session_state.chat_history.append({"role": "assistant", "content": error_msg})
+                        # Add AI response to chat history
+                        st.session_state.chat_history.append({"role": "assistant", "content": answer})
 
-                # Clear input and refresh the app to show new messages
-                st.rerun()
+                    except Exception as e:
+                        error_msg = f"🔧 Sorry, I encountered a technical issue: {e}. Please try again or contact our support team."
+                        st.session_state.chat_history.append({"role": "assistant", "content": error_msg})
 
-        else:
+                    # Refresh the app to show new messages
+                    st.rerun()
+
+            else:
+                st.warning("⚠️ Please enter a question before sending.")
+
+        elif submitted and not user_prompt:
             st.warning("⚠️ Please enter a question before sending.")
-
-    elif send_button and not user_prompt:
-        st.warning("⚠️ Please enter a question before sending.")
 
 else:
     st.info(
