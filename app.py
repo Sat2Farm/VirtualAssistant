@@ -1126,7 +1126,7 @@ if "message_sent" not in st.session_state:
 
 # Auto-load PDF for RAG context
 default_pdf_path = "SatyuktQueries.pdf"
-if os.path.exists(default_pdf_path):
+if os.path.exists(default_pdf_path): #This tricks the app into thinking the user has uploaded a PDF, so your RAG pipeline works without manual upload.
     class DummyFile:  # Create a dummy class to mimic Streamlit's UploadedFile
         def __init__(self, path):
             self.path = path
@@ -1251,6 +1251,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
