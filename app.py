@@ -1050,7 +1050,7 @@ def extract_text_with_pdfplumber(pdf_path):
 def initialize_vector_db(pdf_file, api_keys):
     # Only initialize if vector_store is not already in session_state
     if "vector_store" not in st.session_state:
-        try:
+        try: #streamlit
             loading_placeholder = st.empty()
             loading_placeholder.markdown(
                 """
@@ -1059,7 +1059,7 @@ def initialize_vector_db(pdf_file, api_keys):
                     <div style="color: #4CAF50; font-weight: 600;">Initializing Sat2Farm Assistant... Please wait</div>
                 </div>
                 """,
-                unsafe_allow_html=True
+                unsafe_allow_html=True  #to remove html tags
             )
 
             # Save the uploaded PDF to a temporary file
@@ -1251,5 +1251,6 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
