@@ -1138,6 +1138,9 @@ if os.path.exists(default_pdf_path): #This tricks the app into thinking the user
 
     pdf_input_from_user = DummyFile(default_pdf_path)
 
+
+
+#frontend part
     if initialize_vector_db(pdf_input_from_user, google_api_keys):
         if "initial_greeting_shown" not in st.session_state:
             st.success(
@@ -1193,7 +1196,7 @@ if "vector_store" in st.session_state and llm:  # Only show chat if vector store
 
         # Form submit button (this handles Enter key)
         submitted = st.form_submit_button("Send 🚀")
-
+#####################################################################
         # Handle form submission (Enter key or button click)
         if submitted and user_prompt:
             if user_prompt.strip():
@@ -1204,10 +1207,10 @@ if "vector_store" in st.session_state and llm:  # Only show chat if vector store
                 with st.spinner("🤔 Sat2Farm is thinking..."):
                     try:
                         # Create the document chain
-                        document_chain = create_stuff_documents_chain(llm, prompt)
+                        document_chain = create_stuff_documents_chain(llm, prompt)  #Combines multiple document chunks into a single prompt for the LLM
 
                         # Create retriever from the vector store
-                        retriever = st.session_state.vector_store.as_retriever(search_kwargs={"k": 3})
+                        retriever = st.session_state.vector_store.as_retriever(search_kwargs={"k": 3}) #top 3
 
                         # Create the retrieval chain
                         retrieval_chain = create_retrieval_chain(retriever, document_chain)
@@ -1220,7 +1223,7 @@ if "vector_store" in st.session_state and llm:  # Only show chat if vector store
                         if is_out_of_context(answer, selected_lang):
                             answer = contact_messages.get(selected_lang, contact_messages['English'])
 
-                        # Add AI response to chat history
+                        # Add AI response to chat history  or means storing the model’s generated answer along with previous messages so the chatbot remembers the context for future responses.
                         st.session_state.chat_history.append({"role": "assistant", "content": answer})
 
                     except Exception as e:
@@ -1251,6 +1254,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
