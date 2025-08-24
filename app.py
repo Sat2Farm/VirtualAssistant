@@ -1073,7 +1073,7 @@ def initialize_vector_db(pdf_file, api_keys):
             # Remove the temporary file after extraction
             os.unlink(pdf_path)
 
-            if not text_data.strip():
+            if not text_data.strip(): #not able to extract anything may be img format or something like that
                 st.error("📄 PDF appears empty or unreadable after extraction.")
                 loading_placeholder.empty()
                 return False
@@ -1251,6 +1251,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
