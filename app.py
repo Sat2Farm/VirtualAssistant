@@ -996,13 +996,13 @@ You are a helpful, multilingual AI assistant specializing in agriculture. Answer
 
 
 # Function to safely initialize LLM with error handling
-@st.cache_resource
+@st.cache_resource #prevent reloading for llm to save time and load
 def get_llm():
     try:
         return ChatGoogleGenerativeAI(
             model="gemini-1.5-flash-latest",
             google_api_key=random.choice(google_api_keys),
-            temperature=0.7
+            temperature=0.7 #0 factual and 1 is creative maintaing the balance
         )
     except Exception as e:
         st.error(f"Error initializing LLM: {e}")
@@ -1251,4 +1251,5 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
