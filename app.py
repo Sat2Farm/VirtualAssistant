@@ -1117,7 +1117,7 @@ def initialize_vector_db(pdf_file, api_keys):
 
 
 # Initialize chat history
-if "chat_history" not in st.session_state:
+if "chat_history" not in st.session_state:   #sessions state is temporary session memory
     st.session_state.chat_history = []
 
 # Initialize message sent flag
@@ -1251,6 +1251,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 
 
