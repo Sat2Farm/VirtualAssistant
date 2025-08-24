@@ -644,9 +644,9 @@ nest_asyncio.apply()
 # Import for Google Gemini
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain_core.prompts import ChatPromptTemplate
-from langchain.chains import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain #Combines multiple document chunks into a single prompt for the LLM
+from langchain_core.prompts import ChatPromptTemplate#combine context + query in to a prompt then send it to gemini
+from langchain.chains import create_retrieval_chain#Connects the retriever (vector DB) with the LLM for RAG
 from langchain_community.vectorstores import DocArrayInMemorySearch
 from langchain_core.documents import Document
 from dotenv import load_dotenv
@@ -1251,3 +1251,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
