@@ -664,10 +664,8 @@ st.set_page_config(
 
 # FIXED: Direct API Keys (replace the environment variable loading)
 google_api_keys = [
-    "AIzaSyCO_I3WrcRb_czawPWS-7YAbrrif6xBdxA",
-    "AIzaSyB5blVj4bwuGcRbMW9TyW3ASWG5CUOOXxo", 
-    "AIzaSyCT6coP_wDHy8OjaLzwpV33A_sTL7BpsrM",
-    "AIzaSyCA1GaZe4Rw1fG1X5GKNcDDfJJ32C3D2Vs"
+    "AIzaSyCBO3ZRBJ2dNuakIppaWERkfRn2FtD86Kw",
+    
 ]
 
 # Validate API keys
@@ -1254,3 +1252,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
