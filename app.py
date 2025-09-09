@@ -623,7 +623,6 @@
 
 
 
-
 import streamlit as st
 import os
 import pdfplumber
@@ -651,7 +650,6 @@ from langchain_core.documents import Document
 from dotenv import load_dotenv
 import time
 
-# Load environment variables (optional now since we're using direct keys)
 load_dotenv()
 
 # Page configuration
@@ -662,16 +660,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# FIXED: Direct API Keys (replace the environment variable loading)
+# Load multiple Google API Keys from environment variables
 google_api_keys = [
-    "AIzaSyCBO3ZRBJ2dNuakIppaWERkfRn2FtD86Kw",
-    
+    os.getenv("GOOGLE_API_KEY_1"),
+    os.getenv("GOOGLE_API_KEY_2"),
+    os.getenv("GOOGLE_API_KEY_3"),
+    os.getenv("GOOGLE_API_KEY_4")
 ]
+# Filter out any None values (in case some keys are not set)
+google_api_keys = [key for key in google_api_keys if key]
 
-# Validate API keys
-if not google_api_keys or not any(key for key in google_api_keys if key and key.strip()):
-    st.error("❌ No valid GOOGLE_API_KEYs found. Please check your API keys.")
-    st.stop()
+if not google_api_keys:
+    st.error("❌ No valid GOOGLE_API_KEYs found. Please set at least one in your .env file.")
+    st.stop()  # Stop the app if no API keys are found
 
 # Custom CSS for agriculture theme
 st.markdown(
@@ -996,11 +997,9 @@ You are a helpful, multilingual AI assistant specializing in agriculture. Answer
 @st.cache_resource #prevent reloading for llm to save time and load
 def get_llm():
     try:
-        # Use a random API key from the list
-        selected_api_key = random.choice(google_api_keys)
         return ChatGoogleGenerativeAI(
             model="gemini-1.5-flash-latest",
-            google_api_key=selected_api_key,
+            google_api_key=random.choice(google_api_keys),
             temperature=0.7 #0 factual and 1 is creative maintaing the balance
         )
     except Exception as e:
@@ -1086,11 +1085,9 @@ def initialize_vector_db(pdf_file, api_keys):
 
             # Initialize Gemini Embeddings with better error handling
             try:
-                # Use a random API key for embeddings as well
-                selected_api_key = random.choice(api_keys)
                 st.session_state.embeddings = GoogleGenerativeAIEmbeddings(
                     model="models/embedding-001",
-                    google_api_key=selected_api_key
+                    google_api_key=random.choice(api_keys)
                 )
             except Exception as e:
                 st.error(f"Error initializing embeddings: {e}")
@@ -1139,6 +1136,9 @@ if os.path.exists(default_pdf_path): #This tricks the app into thinking the user
 
     pdf_input_from_user = DummyFile(default_pdf_path)
 
+
+
+#frontend part
     if initialize_vector_db(pdf_input_from_user, google_api_keys):
         if "initial_greeting_shown" not in st.session_state:
             st.success(
@@ -1194,7 +1194,7 @@ if "vector_store" in st.session_state and llm:  # Only show chat if vector store
 
         # Form submit button (this handles Enter key)
         submitted = st.form_submit_button("Send 🚀")
-
+#####################################################################
         # Handle form submission (Enter key or button click)
         if submitted and user_prompt:
             if user_prompt.strip():
@@ -1221,7 +1221,7 @@ if "vector_store" in st.session_state and llm:  # Only show chat if vector store
                         if is_out_of_context(answer, selected_lang):
                             answer = contact_messages.get(selected_lang, contact_messages['English'])
 
-                        # Add AI response to chat history  or means storing the model's generated answer along with previous messages so the chatbot remembers the context for future responses.
+                        # Add AI response to chat history  or means storing the model’s generated answer along with previous messages so the chatbot remembers the context for future responses.
                         st.session_state.chat_history.append({"role": "assistant", "content": answer})
 
                     except Exception as e:
@@ -1252,4 +1252,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
+
+
 
