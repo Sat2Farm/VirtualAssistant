@@ -614,15 +614,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
 import streamlit as st
 import os
 import pdfplumber
@@ -642,9 +633,9 @@ nest_asyncio.apply()
 # Import for Google Gemini
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains.combine_documents import create_stuff_documents_chain #Combines multiple document chunks into a single prompt for the LLM
-from langchain_core.prompts import ChatPromptTemplate#combine context + query in to a prompt then send it to gemini
-from langchain.chains import create_retrieval_chain#Connects the retriever (vector DB) with the LLM for RAG
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_core.prompts import ChatPromptTemplate
+from langchain.chains import create_retrieval_chain
 from langchain_community.vectorstores import DocArrayInMemorySearch
 from langchain_core.documents import Document
 from dotenv import load_dotenv
@@ -660,19 +651,85 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Load multiple Google API Keys from environment variables
-google_api_keys = [
-    os.getenv("GOOGLE_API_KEY_1"),
-    os.getenv("GOOGLE_API_KEY_2"),
-    os.getenv("GOOGLE_API_KEY_3"),
-    os.getenv("GOOGLE_API_KEY_4")
-]
-# Filter out any None values (in case some keys are not set)
-google_api_keys = [key for key in google_api_keys if key]
+# FIXED: Multiple approaches for API key loading
+def get_api_keys():
+    """Try multiple methods to get valid API keys"""
+    api_keys = []
+    
+    # Method 1: Environment variables
+    env_keys = [
+        os.getenv("GOOGLE_API_KEY_1"),
+        os.getenv("GOOGLE_API_KEY_2"),
+        os.getenv("GOOGLE_API_KEY_3"),
+        os.getenv("GOOGLE_API_KEY_4"),
+        os.getenv("GOOGLE_API_KEY"),  # Common single key name
+        os.getenv("GEMINI_API_KEY"),   # Alternative name
+    ]
+    api_keys.extend([key for key in env_keys if key and key.strip()])
+    
+    # Method 2: Streamlit secrets (if available)
+    try:
+        if hasattr(st, 'secrets'):
+            secret_keys = [
+                st.secrets.get("GOOGLE_API_KEY_1"),
+                st.secrets.get("GOOGLE_API_KEY_2"),
+                st.secrets.get("GOOGLE_API_KEY_3"),
+                st.secrets.get("GOOGLE_API_KEY_4"),
+                st.secrets.get("GOOGLE_API_KEY"),
+                st.secrets.get("GEMINI_API_KEY"),
+            ]
+            api_keys.extend([key for key in secret_keys if key and key.strip()])
+    except:
+        pass
+    
+    # Method 3: Manual input fallback (uncomment and add your keys here)
+    # TEMPORARY: Add your valid API keys here for testing
+    manual_keys = [
+        # "YOUR_VALID_API_KEY_1_HERE",
+        # "YOUR_VALID_API_KEY_2_HERE",
+        # "YOUR_VALID_API_KEY_3_HERE",
+        # "YOUR_VALID_API_KEY_4_HERE"
+    ]
+    api_keys.extend([key for key in manual_keys if key and key.strip()])
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_keys = []
+    for key in api_keys:
+        if key not in seen:
+            seen.add(key)
+            unique_keys.append(key)
+    
+    return unique_keys
 
-if not google_api_keys:
-    st.error("❌ No valid GOOGLE_API_KEYs found. Please set at least one in your .env file.")
-    st.stop()  # Stop the app if no API keys are found
+google_api_keys = get_api_keys()
+
+# Enhanced API key validation
+def validate_api_key(api_key):
+    """Basic validation of API key format"""
+    if not api_key:
+        return False
+    # Google API keys typically start with AIza and are 39 characters long
+    if api_key.startswith('AIza') and len(api_key) == 39:
+        return True
+    return False
+
+# Filter and validate API keys
+valid_keys = [key for key in google_api_keys if validate_api_key(key)]
+
+if not valid_keys:
+    st.error("❌ No valid GOOGLE_API_KEYs found!")
+    st.info("""
+    **How to fix this:**
+    1. Create a `.env` file in your project directory
+    2. Add your API key: `GOOGLE_API_KEY=your_actual_api_key_here`
+    3. Or set environment variable: `GOOGLE_API_KEY_1=your_actual_api_key_here`
+    4. Get API keys from: https://makersuite.google.com/app/apikey
+    """)
+    st.stop()
+
+google_api_keys = valid_keys
+st.success(f"✅ Found {len(google_api_keys)} valid API key(s)")
 
 # Custom CSS for agriculture theme
 st.markdown(
@@ -706,33 +763,6 @@ st.markdown(
         font-size: 1.2em;
         margin-bottom: 20px;
         opacity: 0.9;
-    }
-
-    .feature-grid {
-        display: flex;
-        justify-content: space-around;
-        margin-top: 20px;
-        flex-wrap: wrap;
-    }
-
-    .feature-card {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 15px;
-        padding: 15px;
-        margin: 10px;
-        min-width: 150px;
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    .feature-emoji {
-        font-size: 2em;
-        margin-bottom: 10px;
-    }
-
-    .feature-text {
-        font-size: 0.9em;
-        font-weight: 500;
     }
 
     /* Chat interface styling */
@@ -817,44 +847,6 @@ st.markdown(
         box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
     }
 
-    /* Selectbox styling */
-    .stSelectbox > div > div > select {
-        border-radius: 10px;
-        border: 2px solid #4CAF50;
-        padding: 8px 12px;
-    }
-
-    /* Spinner styling */
-    .thinking-spinner {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        background: #f8f9fa;
-        border-radius: 15px;
-        margin: 10px 0;
-    }
-
-    .spinner-text {
-        margin-left: 10px;
-        color: #4CAF50;
-        font-weight: 600;
-    }
-
-     /* Sidebar styling */
-     .css-1d391kg {
-         background: linear-gradient(180deg, #4CAF50 0%, #2E7D32 100%);
-     }
-
-    .css-1d391kg .css-1v0mbdj {
-        color: green;
-    }
-
-    /* Hide streamlit menu */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-
     /* Language selector */
     .language-selector {
         background: rgba(255, 255, 255, 0.1);
@@ -868,7 +860,6 @@ st.markdown(
         font-weight: 600;
         margin-bottom: 5px;
     }
-
     </style>
     """,
     unsafe_allow_html=True
@@ -883,12 +874,18 @@ with st.sidebar:
         "English", "हिंदी", "ಕನ್ನಡ", "தமிழ்", "తెలుగు", "বাংলা", "मराठी", "ગુજરાતી", "ਪੰਜਾਬੀ"
     ]
     selected_lang = st.selectbox("Select Language", languages, key="language_selector")
-
     st.markdown('</div>', unsafe_allow_html=True)
+
+    # API Key Status
+    st.markdown("---")
+    st.markdown("### 🔑 API Status")
+    st.markdown(f"**Keys Found:** {len(google_api_keys)}")
+    for i, key in enumerate(google_api_keys, 1):
+        st.markdown(f"**Key {i}:** {key[:8]}...{key[-4:]}")
 
     # Sidebar info
     st.markdown("---")
-    st.markdown("### 🌾 About Sat2Farm 🌾")
+    st.markdown("### 🌾 About Sat2Farm")
     st.markdown("**Virtual Assistant** powered by AI and Satellite Intelligence")
     st.markdown("**Services:**")
     st.markdown("- 🛰️ Crop Monitoring")
@@ -905,7 +902,7 @@ with st.sidebar:
 st.markdown(
     """
     <div class="welcome-container">
-        <div class="logo-title">🌾 Sat2Farm Virtual Assistant🌾</div>
+        <div class="logo-title">🌾 Sat2Farm Virtual Assistant 🌾</div>
         <div class="welcome-subtitle">Empowering Agriculture with Satellite Intelligence & AI Technology</div>
     </div>
     """,
@@ -992,28 +989,52 @@ You are a helpful, multilingual AI assistant specializing in agriculture. Answer
     """
 )
 
-
-# Function to safely initialize LLM with error handling
-@st.cache_resource #prevent reloading for llm to save time and load
+# FIXED: Enhanced LLM initialization with retry logic
+@st.cache_resource
 def get_llm():
-    try:
-        return ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash-latest",
-            google_api_key=random.choice(google_api_keys),
-            temperature=0.7 #0 factual and 1 is creative maintaing the balance
-        )
-    except Exception as e:
-        st.error(f"Error initializing LLM: {e}")
-        return None
+    """Initialize LLM with retry logic and better error handling"""
+    for attempt in range(3):  # Try up to 3 times
+        try:
+            # Use the first available API key for consistency
+            selected_api_key = google_api_keys[0] if google_api_keys else None
+            
+            if not selected_api_key:
+                raise ValueError("No valid API key available")
+            
+            llm = ChatGoogleGenerativeAI(
+                model="gemini-1.5-flash-latest",
+                google_api_key=selected_api_key,
+                temperature=0.7,
+                max_retries=2,
+                request_timeout=30
+            )
+            
+            # Test the LLM with a simple query
+            test_response = llm.invoke("Hello")
+            
+            return llm
+            
+        except Exception as e:
+            st.warning(f"Attempt {attempt + 1} failed: {str(e)}")
+            if attempt == 2:  # Last attempt
+                st.error(f"Failed to initialize LLM after 3 attempts: {e}")
+                return None
+            
+            # Try next API key if available
+            if len(google_api_keys) > attempt + 1:
+                google_api_keys.pop(0)  # Remove failed key
+    
+    return None
 
-
-# Initialize the Gemini LLM for chat/generation with a random API key
+# Initialize the Gemini LLM
 llm = get_llm()
 
+if not llm:
+    st.error("❌ Could not initialize the AI model. Please check your API keys.")
+    st.stop()
 
 def is_out_of_context(answer, current_selected_lang):
-    # This function checks if the answer matches the pre-defined contact message
-    # or contains keywords indicating out-of-context response.
+    """Check if the answer indicates out-of-context response"""
     contact_message_template = contact_messages.get(current_selected_lang, contact_messages['English']).lower()
 
     # Check for direct match (case-insensitive)
@@ -1024,14 +1045,14 @@ def is_out_of_context(answer, current_selected_lang):
     keywords = [
         "i'm sorry", "i don't know", "not sure", "out of context",
         "invalid", "no mention", "cannot", "unable", "not available",
-        "जानकारी उपलब्ध नहीं", "मुझे नहीं पता", "संदर्भ में नहीं",  # Hindi examples
-        "ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ", "ನನಗೆ ಗೊತ್ತಿಲ್ಲ",  # Kannada examples
-        "தகவல் இல்லை", "எனக்குத் தெரியாது",  # Tamil examples
+        "जानकारी उपलब्ध नहीं", "मुझे नहीं पता", "संदर्भ में नहीं",
+        "ಮಾಹಿತಿ ಲಭ್ಯವಿಲ್ಲ", "ನನಗೆ ಗೊತ್ತಿಲ್ಲ",
+        "தகவல் இல்லை", "எனக்குத் தெரியாது",
     ]
     return any(k in answer.lower() for k in keywords)
 
-
 def extract_text_with_pdfplumber(pdf_path):
+    """Extract text from PDF using pdfplumber"""
     text = ""
     try:
         with pdfplumber.open(pdf_path) as pdf:
@@ -1044,11 +1065,11 @@ def extract_text_with_pdfplumber(pdf_path):
         return ""
     return text
 
-
+# FIXED: Enhanced vector DB initialization with better error handling
 def initialize_vector_db(pdf_file, api_keys):
-    # Only initialize if vector_store is not already in session_state
+    """Initialize vector database with enhanced error handling"""
     if "vector_store" not in st.session_state:
-        try: #streamlit
+        try:
             loading_placeholder = st.empty()
             loading_placeholder.markdown(
                 """
@@ -1057,7 +1078,7 @@ def initialize_vector_db(pdf_file, api_keys):
                     <div style="color: #4CAF50; font-weight: 600;">Initializing Sat2Farm Assistant... Please wait</div>
                 </div>
                 """,
-                unsafe_allow_html=True  #to remove html tags
+                unsafe_allow_html=True
             )
 
             # Save the uploaded PDF to a temporary file
@@ -1067,34 +1088,40 @@ def initialize_vector_db(pdf_file, api_keys):
 
             # Extract text from the temporary PDF
             text_data = extract_text_with_pdfplumber(pdf_path)
+            os.unlink(pdf_path)  # Remove temporary file
 
-            # Remove the temporary file after extraction
-            os.unlink(pdf_path)
-
-            if not text_data.strip(): #not able to extract anything may be img format or something like that
+            if not text_data.strip():
                 st.error("📄 PDF appears empty or unreadable after extraction.")
                 loading_placeholder.empty()
                 return False
 
-            # Create a Document object from the extracted text
+            # Create Document object
             doc = Document(page_content=text_data)
 
-            # Split the document into chunks
-            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=300)
+            # Split document into chunks
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=1500, 
+                chunk_overlap=300
+            )
             chunks = text_splitter.split_documents([doc])
 
-            # Initialize Gemini Embeddings with better error handling
-            try:
-                st.session_state.embeddings = GoogleGenerativeAIEmbeddings(
-                    model="models/embedding-001",
-                    google_api_key=random.choice(api_keys)
-                )
-            except Exception as e:
-                st.error(f"Error initializing embeddings: {e}")
-                loading_placeholder.empty()
-                return False
+            # Initialize embeddings with retry logic
+            for attempt in range(len(api_keys)):
+                try:
+                    selected_api_key = api_keys[attempt % len(api_keys)]
+                    st.session_state.embeddings = GoogleGenerativeAIEmbeddings(
+                        model="models/embedding-001",
+                        google_api_key=selected_api_key
+                    )
+                    break
+                except Exception as e:
+                    if attempt == len(api_keys) - 1:
+                        st.error(f"Error initializing embeddings with all API keys: {e}")
+                        loading_placeholder.empty()
+                        return False
+                    continue
 
-            # Create the vector store from the document chunks and embeddings
+            # Create vector store
             try:
                 st.session_state.vector_store = DocArrayInMemorySearch.from_documents(
                     chunks, st.session_state.embeddings
@@ -1104,28 +1131,27 @@ def initialize_vector_db(pdf_file, api_keys):
                 loading_placeholder.empty()
                 return False
 
-            loading_placeholder.empty()  # Clear the loading message
+            loading_placeholder.empty()
             return True
 
         except Exception as e:
             st.error(f"❌ Error initializing assistant: {str(e)}")
             loading_placeholder.empty()
             return False
-    return True  # Already initialized
-
+    
+    return True
 
 # Initialize chat history
-if "chat_history" not in st.session_state:   #sessions state is temporary session memory
+if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# Initialize message sent flag
 if "message_sent" not in st.session_state:
     st.session_state.message_sent = False
 
 # Auto-load PDF for RAG context
 default_pdf_path = "SatyuktQueries.pdf"
-if os.path.exists(default_pdf_path): #This tricks the app into thinking the user has uploaded a PDF, so your RAG pipeline works without manual upload.
-    class DummyFile:  # Create a dummy class to mimic Streamlit's UploadedFile
+if os.path.exists(default_pdf_path):
+    class DummyFile:
         def __init__(self, path):
             self.path = path
 
@@ -1133,28 +1159,22 @@ if os.path.exists(default_pdf_path): #This tricks the app into thinking the user
             with open(self.path, "rb") as f:
                 return f.read()
 
-
     pdf_input_from_user = DummyFile(default_pdf_path)
 
-
-
-#frontend part
     if initialize_vector_db(pdf_input_from_user, google_api_keys):
         if "initial_greeting_shown" not in st.session_state:
-            st.success(
-                "✅ Hi there! 👋 Sat2Farm Virtual Assistant is ready to assist you! Ask me anything about agriculture, farming, or our services.")
+            st.success("✅ Hi there! 👋 Sat2Farm Virtual Assistant is ready to assist you! Ask me anything about agriculture, farming, or our services.")
             st.session_state.initial_greeting_shown = True
     else:
         st.error(f"❌ Could not initialize assistant with '{default_pdf_path}'. Check PDF content or API keys.")
 else:
-    st.error(
-        f"❌ PDF file '{default_pdf_path}' not found in the project directory. Please ensure it's in the same directory as your Streamlit app.")
+    st.error(f"❌ PDF file '{default_pdf_path}' not found in the project directory.")
 
 # Enhanced Chat Interface
-if "vector_store" in st.session_state and llm:  # Only show chat if vector store is initialized
+if "vector_store" in st.session_state and llm:
     st.markdown("### 💬 Chat with Sat2Farm Virtual Assistant")
 
-    # Display chat history with enhanced styling
+    # Display chat history
     chat_container_key = f"chat_container_{len(st.session_state.chat_history)}"
     st.markdown(f'<div class="chat-container" id="{chat_container_key}">', unsafe_allow_html=True)
 
@@ -1168,23 +1188,9 @@ if "vector_store" in st.session_state and llm:  # Only show chat if vector store
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # JavaScript to scroll chat container to bottom
-    st.markdown(
-        f"""
-        <script>
-            var chatContainer = document.getElementById('{chat_container_key}');
-            if (chatContainer) {{
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            }}
-        </script>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # Input section with form for Enter key support
+    # Input section
     st.markdown("### Ask your question:")
 
-    # Create a form to handle Enter key submission
     with st.form(key='chat_form', clear_on_submit=True):
         user_prompt = st.text_input(
             "Type your question here...",
@@ -1192,28 +1198,24 @@ if "vector_store" in st.session_state and llm:  # Only show chat if vector store
             key="user_input_form"
         )
 
-        # Form submit button (this handles Enter key)
         submitted = st.form_submit_button("Send 🚀")
-#####################################################################
-        # Handle form submission (Enter key or button click)
+
         if submitted and user_prompt:
             if user_prompt.strip():
-                # Add user message to chat history
                 st.session_state.chat_history.append({"role": "user", "content": user_prompt})
 
-                # Show thinking animation
                 with st.spinner("🤔 Sat2Farm is thinking..."):
                     try:
-                        # Create the document chain
-                        document_chain = create_stuff_documents_chain(llm, prompt)  #Combines multiple document chunks into a single prompt for the LLM
-
-                        # Create retriever from the vector store
-                        retriever = st.session_state.vector_store.as_retriever(search_kwargs={"k": 3}) #top 3
-
-                        # Create the retrieval chain
+                        # Create document chain
+                        document_chain = create_stuff_documents_chain(llm, prompt)
+                        
+                        # Create retriever
+                        retriever = st.session_state.vector_store.as_retriever(search_kwargs={"k": 3})
+                        
+                        # Create retrieval chain
                         retrieval_chain = create_retrieval_chain(retriever, document_chain)
-
-                        # Invoke the retrieval chain with the user's prompt
+                        
+                        # Get response
                         response = retrieval_chain.invoke({'input': user_prompt})
                         answer = response['answer']
 
@@ -1221,25 +1223,18 @@ if "vector_store" in st.session_state and llm:  # Only show chat if vector store
                         if is_out_of_context(answer, selected_lang):
                             answer = contact_messages.get(selected_lang, contact_messages['English'])
 
-                        # Add AI response to chat history  or means storing the model’s generated answer along with previous messages so the chatbot remembers the context for future responses.
                         st.session_state.chat_history.append({"role": "assistant", "content": answer})
 
                     except Exception as e:
                         error_msg = f"🔧 Sorry, I encountered a technical issue: {e}. Please try again or contact our support team."
                         st.session_state.chat_history.append({"role": "assistant", "content": error_msg})
 
-                    # Refresh the app to show new messages
                     st.rerun()
-
             else:
                 st.warning("⚠️ Please enter a question before sending.")
 
-        elif submitted and not user_prompt:
-            st.warning("⚠️ Please enter a question before sending.")
-
 else:
-    st.info(
-        "🔄 Initializing Sat2Farm Virtual Assistant... Please wait a moment.")
+    st.info("🔄 Initializing Sat2Farm Virtual Assistant... Please wait a moment.")
 
 # Footer
 st.markdown("---")
@@ -1252,7 +1247,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-
-
-
